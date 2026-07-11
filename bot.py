@@ -34,7 +34,11 @@ def role_keyboard():
 @dp.message(CommandStart())
 async def start_handler(message: Message):
     await message.answer(
-        "Welcome to Freelance Ethiopia 🇪🇹\nChoose how you want to continue:",
+        "🇪🇹 *EthioGig*\n"
+        "_Test the idea. Keep the job. Build the future._\n\n"
+        "Earn a real income on the side, or get real work done without the overhead of an office.\n\n"
+        "Choose how you want to continue:",
+        parse_mode="Markdown",
         reply_markup=role_keyboard()
     )
 

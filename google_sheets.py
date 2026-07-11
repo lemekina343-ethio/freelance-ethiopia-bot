@@ -42,6 +42,7 @@ def add_lead(lead_type, ref_id, from_user_id, to_user_id):
 def get_active_freelancers():
     records = freelancers_ws.get_all_records()
     return [r for r in records if r.get("status") == "active"]
+
 def get_all_jobs():
     return jobs_ws.get_all_records()
 
@@ -50,8 +51,26 @@ def get_all_freelancers():
 
 def set_job_status(job_id, new_status):
     cell = jobs_ws.find(job_id)
-    jobs_ws.update_cell(cell.row, 10, new_status)  # column 10 = status
+    jobs_ws.update_cell(cell.row, 10, new_status)
 
 def set_freelancer_status(user_id, new_status):
     cell = freelancers_ws.find(str(user_id))
-    freelancers_ws.update_cell(cell.row, 10, new_status)  # column 10 = status
+    freelancers_ws.update_cell(cell.row, 10, new_status)
+
+def update_freelancer_field(user_id, field_name, new_value):
+    field_columns = {
+        "name": 2, "category": 3, "skills": 4, "experience": 5,
+        "portfolio_links": 6, "location": 7, "rate": 8, "contact": 9
+    }
+    col = field_columns.get(field_name)
+    if not col:
+        return False
+
+    records = freelancers_ws.get_all_records()
+    user_rows = [i for i, r in enumerate(records) if str(r.get("user_id")) == str(user_id)]
+    if not user_rows:
+        return False
+
+    row_index = user_rows[-1] + 2
+    freelancers_ws.update_cell(row_index, col, new_value)
+    return True

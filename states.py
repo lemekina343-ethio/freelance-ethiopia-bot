@@ -18,3 +18,6 @@ class ClientOnboarding(StatesGroup):
     budget = State()
     location = State()
     contact = State()
+
+class EditProfile(StatesGroup):
+    waiting_for_value = State()

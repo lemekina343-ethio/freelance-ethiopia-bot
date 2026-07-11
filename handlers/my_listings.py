@@ -1,8 +1,11 @@
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.fsm.context import FSMContext
 
-from google_sheets import get_all_freelancers, get_all_jobs
+from states import EditProfile
+from google_sheets import get_all_freelancers, get_all_jobs, update_freelancer_field
 
 router = Router()
 
@@ -28,7 +31,7 @@ async def my_profile(message: Message):
         f"Rate: {latest.get('rate', 'N/A')}\n"
         f"Contact: {latest.get('contact', 'N/A')}\n"
         f"Status: {latest.get('status', 'N/A')}\n\n"
-        f"To update your profile, tap 'Find work' from /start and submit again — your newest info will be shown here."
+        f"To update, send /edit_profile"
     )
 
 @router.message(Command("my_jobs"))
@@ -74,7 +77,7 @@ async def my_profile_callback(callback: CallbackQuery):
         f"Rate: {latest.get('rate', 'N/A')}\n"
         f"Contact: {latest.get('contact', 'N/A')}\n"
         f"Status: {latest.get('status', 'N/A')}\n\n"
-        f"To update your profile, tap 'Find work' and submit again — your newest info will be shown here."
+        f"To update, send /edit_profile"
     )
 
 @router.callback_query(F.data == "my_jobs")
@@ -97,3 +100,49 @@ async def my_jobs_callback(callback: CallbackQuery):
             f"Description: {job.get('description', 'N/A')}\n"
             f"Posted: {job.get('created_at', 'N/A')}"
         )
+
+def edit_menu_keyboard():
+    kb = InlineKeyboardBuilder()
+    kb.button(text="✏️ Name", callback_data="editfl_name")
+    kb.button(text="🏷 Category", callback_data="editfl_category")
+    kb.button(text="🛠 Skills", callback_data="editfl_skills")
+    kb.button(text="📈 Experience", callback_data="editfl_experience")
+    kb.button(text="🔗 Portfolio", callback_data="editfl_portfolio_links")
+    kb.button(text="📍 Location", callback_data="editfl_location")
+    kb.button(text="💰 Rate", callback_data="editfl_rate")
+    kb.button(text="📞 Contact", callback_data="editfl_contact")
+    kb.adjust(2)
+    return kb.as_markup()
+
+@router.message(Command("edit_profile"))
+async def edit_profile_start(message: Message):
+    freelancers = get_all_freelancers()
+    my_entries = [f for f in freelancers if str(f.get("user_id")) == str(message.from_user.id)]
+    if not my_entries:
+        await message.answer("You don't have a profile yet. Tap 'Find work' from /start to create one.")
+        return
+    await message.answer("What would you like to update?", reply_markup=edit_menu_keyboard())
+
+@router.callback_query(F.data.startswith("editfl_"))
+async def edit_field_select(callback: CallbackQuery, state: FSMContext):
+    field = callback.data.replace("editfl_", "")
+    await state.update_data(field=field)
+    await state.set_state(EditProfile.waiting_for_value)
+    field_labels = {
+        "name": "your name", "category": "your category", "skills": "your skills",
+        "experience": "your experience level", "portfolio_links": "your portfolio link",
+        "location": "your location", "rate": "your rate", "contact": "your contact info"
+    }
+    await callback.message.edit_text(f"Send the new value for {field_labels.get(field, field)}:")
+    await callback.answer()
+
+@router.message(EditProfile.waiting_for_value)
+async def edit_field_save(message: Message, state: FSMContext):
+    data = await state.get_data()
+    field = data.get("field")
+    success = update_freelancer_field(message.from_user.id, field, message.text)
+    if success:
+        await message.answer("✅ Updated! Send /my_profile to see your latest info.")
+    else:
+        await message.answer("Something went wrong — couldn't find your profile to update.")
+    await state.clear()
