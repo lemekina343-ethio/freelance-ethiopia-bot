@@ -150,7 +150,7 @@ async def process_contact(message: Message, state: FSMContext):
         portfolio_file_type=data.get("portfolio_file_type", "")
     )
 
-    await message.answer(
+    caption = (
         f"✅ Profile saved!\n\n"
         f"Name: {data['name']}\n"
         f"Category: {data['category']}\n"
@@ -162,4 +162,14 @@ async def process_contact(message: Message, state: FSMContext):
         f"Contact: {message.text}\n\n"
         f"You're now listed! Clients will be able to find you."
     )
+
+    file_id = data.get("portfolio_file_id")
+    file_type = data.get("portfolio_file_type")
+    if file_id and file_type == "photo":
+        await message.answer_photo(photo=file_id, caption=caption)
+    elif file_id and file_type == "video":
+        await message.answer_video(video=file_id, caption=caption)
+    else:
+        await message.answer(caption)
+
     await state.clear()

@@ -9,6 +9,8 @@ from google_sheets import get_all_freelancers, get_all_jobs, update_freelancer_f
 
 router = Router()
 
+from aiogram.types import FSInputFile
+
 @router.message(Command("my_profile"))
 async def my_profile(message: Message):
     user_id = message.from_user.id
@@ -20,7 +22,7 @@ async def my_profile(message: Message):
         return
 
     latest = my_entries[-1]
-    await message.answer(
+    caption = (
         f"👤 Your Profile\n\n"
         f"Name: {latest.get('name', 'N/A')}\n"
         f"Category: {latest.get('category', 'N/A')}\n"
@@ -33,7 +35,49 @@ async def my_profile(message: Message):
         f"Status: {latest.get('status', 'N/A')}\n\n"
         f"To update, send /edit_profile"
     )
+    file_id = latest.get("portfolio_file_id")
+    file_type = latest.get("portfolio_file_type")
+    if file_id and file_type == "photo":
+        await message.answer_photo(photo=file_id, caption=caption)
+    elif file_id and file_type == "video":
+        await message.answer_video(video=file_id, caption=caption)
+    else:
+        await message.answer(caption)
 
+@router.callback_query(F.data == "my_profile")
+async def my_profile_callback(callback: CallbackQuery):
+    await callback.answer()
+    user_id = callback.from_user.id
+    freelancers = get_all_freelancers()
+    my_entries = [f for f in freelancers if str(f.get("user_id")) == str(user_id)]
+
+    if not my_entries:
+        await callback.message.answer("You don't have a freelancer profile yet. Tap 'Find work' to create one.")
+        return
+
+    latest = my_entries[-1]
+    caption = (
+        f"👤 Your Profile\n\n"
+        f"Name: {latest.get('name', 'N/A')}\n"
+        f"Category: {latest.get('category', 'N/A')}\n"
+        f"Skills: {latest.get('skills', 'N/A')}\n"
+        f"Experience: {latest.get('experience', 'N/A')}\n"
+        f"Portfolio: {latest.get('portfolio_links', 'N/A')}\n"
+        f"Location: {latest.get('location', 'N/A')}\n"
+        f"Rate: {latest.get('rate', 'N/A')}\n"
+        f"Contact: {latest.get('contact', 'N/A')}\n"
+        f"Status: {latest.get('status', 'N/A')}\n\n"
+        f"To update, send /edit_profile"
+    )
+    file_id = latest.get("portfolio_file_id")
+    file_type = latest.get("portfolio_file_type")
+    if file_id and file_type == "photo":
+        await callback.message.answer_photo(photo=file_id, caption=caption)
+    elif file_id and file_type == "video":
+        await callback.message.answer_video(video=file_id, caption=caption)
+    else:
+        await callback.message.answer(caption)
+        
 @router.message(Command("my_jobs"))
 async def my_jobs(message: Message):
     user_id = message.from_user.id
