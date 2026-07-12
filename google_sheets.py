@@ -15,6 +15,7 @@ users_ws = sh.worksheet("Users")
 freelancers_ws = sh.worksheet("Freelancers")
 jobs_ws = sh.worksheet("Jobs")
 leads_ws = sh.worksheet("Leads")
+ratings_ws = sh.worksheet("Ratings")
 
 def safe_append_row(worksheet, row, retries=3):
     for attempt in range(retries):
@@ -97,3 +98,17 @@ def update_freelancer_field(user_id, field_name, new_value):
     row_index = user_rows[-1] + 2
     safe_update_cell(freelancers_ws, row_index, col, new_value)
     return True
+
+def add_rating(freelancer_user_id, from_user_id, stars):
+    rating_id = str(uuid.uuid4())[:8]
+    safe_append_row(ratings_ws, [
+        rating_id, freelancer_user_id, from_user_id, stars, str(date.today())
+    ])
+
+def get_freelancer_rating(freelancer_user_id):
+    records = ratings_ws.get_all_records()
+    my_ratings = [r for r in records if str(r.get("freelancer_user_id")) == str(freelancer_user_id)]
+    if not my_ratings:
+        return None, 0
+    avg = sum(int(r["stars"]) for r in my_ratings) / len(my_ratings)
+    return round(avg, 1), len(my_ratings)
