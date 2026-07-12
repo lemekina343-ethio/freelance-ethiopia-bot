@@ -73,11 +73,16 @@ async def process_portfolio(message: Message, state: FSMContext):
     await state.update_data(portfolio=message.text)
     await state.set_state(FreelancerOnboarding.portfolio_media)
     await message.answer(
-        "Want to show a sample of your work? Send one photo or video now, or type 'skip'."
+        "Want to show a sample of your work? Send *one* photo or video now, or type 'skip'.\n\n_(If you send more than one, only the first will be saved.)_",
+        parse_mode="Markdown"
     )
 
 @router.message(FreelancerOnboarding.portfolio_media, F.photo)
 async def process_portfolio_photo(message: Message, state: FSMContext):
+    data = await state.get_data()
+    if data.get("media_received"):
+        return
+    await state.update_data(media_received=True)
     file_id = message.photo[-1].file_id
     await state.update_data(portfolio_file_id=file_id, portfolio_file_type="photo")
     await state.set_state(FreelancerOnboarding.location)
@@ -85,10 +90,23 @@ async def process_portfolio_photo(message: Message, state: FSMContext):
 
 @router.message(FreelancerOnboarding.portfolio_media, F.video)
 async def process_portfolio_video(message: Message, state: FSMContext):
+    data = await state.get_data()
+    if data.get("media_received"):
+        return
+    await state.update_data(media_received=True)
     file_id = message.video.file_id
     await state.update_data(portfolio_file_id=file_id, portfolio_file_type="video")
     await state.set_state(FreelancerOnboarding.location)
     await message.answer("Got it! Where are you based?", reply_markup=location_keyboard())
+
+@router.message(FreelancerOnboarding.portfolio_media)
+async def process_portfolio_skip(message: Message, state: FSMContext):
+    data = await state.get_data()
+    if data.get("media_received"):
+        return
+    await state.update_data(media_received=True, portfolio_file_id="", portfolio_file_type="")
+    await state.set_state(FreelancerOnboarding.location)
+    await message.answer("No problem! Where are you based?", reply_markup=location_keyboard())
 
 @router.message(FreelancerOnboarding.portfolio_media)
 async def process_portfolio_skip(message: Message, state: FSMContext):
