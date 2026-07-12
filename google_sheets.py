@@ -2,6 +2,7 @@ import gspread
 import uuid
 import os
 import json
+import time
 from datetime import date
 from config import GOOGLE_SHEET_NAME
 
@@ -15,17 +16,39 @@ freelancers_ws = sh.worksheet("Freelancers")
 jobs_ws = sh.worksheet("Jobs")
 leads_ws = sh.worksheet("Leads")
 
+def safe_append_row(worksheet, row, retries=3):
+    for attempt in range(retries):
+        try:
+            worksheet.append_row(row)
+            return True
+        except gspread.exceptions.APIError as e:
+            if attempt < retries - 1:
+                time.sleep(2 * (attempt + 1))
+            else:
+                raise e
+
+def safe_update_cell(worksheet, row, col, value, retries=3):
+    for attempt in range(retries):
+        try:
+            worksheet.update_cell(row, col, value)
+            return True
+        except gspread.exceptions.APIError as e:
+            if attempt < retries - 1:
+                time.sleep(2 * (attempt + 1))
+            else:
+                raise e
+
 def add_user(user_id, username, role, created_at):
-    users_ws.append_row([user_id, username, role, created_at])
+    safe_append_row(users_ws, [user_id, username, role, created_at])
 
 def add_freelancer(user_id, name, category, skills, experience, portfolio, location, rate, contact, portfolio_file_id="", portfolio_file_type=""):
-    freelancers_ws.append_row([
+    safe_append_row(freelancers_ws, [
         user_id, name, category, skills, experience, portfolio, location, rate, contact, "active", "", portfolio_file_id, portfolio_file_type
     ])
 
 def add_job(client_user_id, client_name, title, category, description, budget, location_pref, contact):
     job_id = str(uuid.uuid4())[:8]
-    jobs_ws.append_row([
+    safe_append_row(jobs_ws, [
         job_id, client_user_id, client_name, title, category, description, budget, location_pref, contact, "open", str(date.today())
     ])
 
@@ -35,7 +58,7 @@ def get_open_jobs():
 
 def add_lead(lead_type, ref_id, from_user_id, to_user_id):
     lead_id = str(uuid.uuid4())[:8]
-    leads_ws.append_row([
+    safe_append_row(leads_ws, [
         lead_id, lead_type, ref_id, from_user_id, to_user_id, "True", str(date.today())
     ])
 
@@ -51,11 +74,11 @@ def get_all_freelancers():
 
 def set_job_status(job_id, new_status):
     cell = jobs_ws.find(job_id)
-    jobs_ws.update_cell(cell.row, 10, new_status)
+    safe_update_cell(jobs_ws, cell.row, 10, new_status)
 
 def set_freelancer_status(user_id, new_status):
     cell = freelancers_ws.find(str(user_id))
-    freelancers_ws.update_cell(cell.row, 10, new_status)
+    safe_update_cell(freelancers_ws, cell.row, 10, new_status)
 
 def update_freelancer_field(user_id, field_name, new_value):
     field_columns = {
@@ -72,5 +95,5 @@ def update_freelancer_field(user_id, field_name, new_value):
         return False
 
     row_index = user_rows[-1] + 2
-    freelancers_ws.update_cell(row_index, col, new_value)
+    safe_update_cell(freelancers_ws, row_index, col, new_value)
     return True
