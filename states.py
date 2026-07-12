@@ -6,6 +6,7 @@ class FreelancerOnboarding(StatesGroup):
     skills = State()
     experience = State()
     portfolio = State()
+    portfolio_media = State()
     location = State()
     rate = State()
     contact = State()

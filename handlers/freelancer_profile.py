@@ -64,15 +64,37 @@ async def process_experience(callback, state: FSMContext):
     await state.update_data(experience=experience)
     await state.set_state(FreelancerOnboarding.portfolio)
     await callback.message.edit_text(
-        f"Experience: {experience}\n\nShare links to your work (Google Drive, Behance, GitHub, YouTube, etc.) or type 'none'."
+        f"Experience: {experience}\n\nShare a link to your work (Google Drive, Behance, GitHub, YouTube, etc.) or type 'none'."
     )
     await callback.answer()
 
 @router.message(FreelancerOnboarding.portfolio)
 async def process_portfolio(message: Message, state: FSMContext):
     await state.update_data(portfolio=message.text)
+    await state.set_state(FreelancerOnboarding.portfolio_media)
+    await message.answer(
+        "Want to show a sample of your work? Send one photo or video now, or type 'skip'."
+    )
+
+@router.message(FreelancerOnboarding.portfolio_media, F.photo)
+async def process_portfolio_photo(message: Message, state: FSMContext):
+    file_id = message.photo[-1].file_id
+    await state.update_data(portfolio_file_id=file_id, portfolio_file_type="photo")
     await state.set_state(FreelancerOnboarding.location)
-    await message.answer("Where are you based?", reply_markup=location_keyboard())
+    await message.answer("Got it! Where are you based?", reply_markup=location_keyboard())
+
+@router.message(FreelancerOnboarding.portfolio_media, F.video)
+async def process_portfolio_video(message: Message, state: FSMContext):
+    file_id = message.video.file_id
+    await state.update_data(portfolio_file_id=file_id, portfolio_file_type="video")
+    await state.set_state(FreelancerOnboarding.location)
+    await message.answer("Got it! Where are you based?", reply_markup=location_keyboard())
+
+@router.message(FreelancerOnboarding.portfolio_media)
+async def process_portfolio_skip(message: Message, state: FSMContext):
+    await state.update_data(portfolio_file_id="", portfolio_file_type="")
+    await state.set_state(FreelancerOnboarding.location)
+    await message.answer("No problem! Where are you based?", reply_markup=location_keyboard())
 
 @router.callback_query(FreelancerOnboarding.location, F.data.startswith("loc_"))
 async def process_location(callback, state: FSMContext):
@@ -105,7 +127,9 @@ async def process_contact(message: Message, state: FSMContext):
         portfolio=data["portfolio"],
         location=data["location"],
         rate=data["rate"],
-        contact=message.text
+        contact=message.text,
+        portfolio_file_id=data.get("portfolio_file_id", ""),
+        portfolio_file_type=data.get("portfolio_file_type", "")
     )
 
     await message.answer(

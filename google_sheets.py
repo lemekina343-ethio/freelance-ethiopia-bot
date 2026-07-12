@@ -18,9 +18,9 @@ leads_ws = sh.worksheet("Leads")
 def add_user(user_id, username, role, created_at):
     users_ws.append_row([user_id, username, role, created_at])
 
-def add_freelancer(user_id, name, category, skills, experience, portfolio, location, rate, contact):
+def add_freelancer(user_id, name, category, skills, experience, portfolio, location, rate, contact, portfolio_file_id="", portfolio_file_type=""):
     freelancers_ws.append_row([
-        user_id, name, category, skills, experience, portfolio, location, rate, contact, "active"
+        user_id, name, category, skills, experience, portfolio, location, rate, contact, "active", "", portfolio_file_id, portfolio_file_type
     ])
 
 def add_job(client_user_id, client_name, title, category, description, budget, location_pref, contact):
