@@ -8,7 +8,7 @@ from google_sheets import add_freelancer
 
 router = Router()
 
-CATEGORIES = ["Graphic Design", "Web Dev", "Writing & Translation", "Video & Animation", "Data Entry", "Virtual Assistant", "Other"]
+CATEGORIES = ["Graphic Design", "Web Dev", "Writing & Translation", "Video & Animation", "Voice Over", "Modeling", "Data Entry", "Virtual Assistant", "Other"]
 LOCATIONS = ["Addis Ababa", "Other city", "Remote (anywhere in Ethiopia)"]
 
 def category_keyboard():

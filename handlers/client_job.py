@@ -8,7 +8,7 @@ from google_sheets import add_job
 
 router = Router()
 
-CATEGORIES = ["Graphic Design", "Web Dev", "Writing & Translation", "Video & Animation", "Data Entry", "Virtual Assistant", "Other"]
+CATEGORIES = ["Graphic Design", "Web Dev", "Writing & Translation", "Video & Animation", "Voice Over", "Modeling", "Data Entry", "Virtual Assistant", "Other"]
 LOCATIONS = ["Addis Ababa", "Remote (anywhere in Ethiopia)", "Other city"]
 
 def category_keyboard():
